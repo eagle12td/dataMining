@@ -18,4 +18,4 @@ for i, cn in enumerate(trainClasses):
 	cl = forest(trainSingleClass(cn))
 	rez[cn] = [cl(i, Orange.classification.Classifier.GetProbabilities) for i in testData]
 
-cPickle.dump(rez, file("vseAliNic", "w"), -1)
+cPickle.dump(rez, file("RF200.pickled", "w"), -1)
