@@ -1,3 +1,4 @@
+import sys
 import Orange
 import cPickle
 
@@ -10,8 +11,9 @@ testData = Orange.data.Table(Orange.data.Domain(trainData.domain.features + [Ora
 
 forest = Orange.ensemble.forest.RandomForestLearner(trees=200, name="forest")
 rez = {}
-for cn in trainClasses:
+for i, cn in enumerate(trainClasses):
 #cn = "c40"
+	sys.stdout.write("%3d%% done, current class: %s" % (100.0*i/82, cn))
 	cl = forest(trainSingleClass(cn))
 	rez[cn] = [cl(i, Orange.classification.Classifier.GetProbabilities) for i in testData]
 
