@@ -13,7 +13,8 @@ forest = Orange.ensemble.forest.RandomForestLearner(trees=200, name="forest")
 rez = {}
 for i, cn in enumerate(trainClasses):
 #cn = "c40"
-	sys.stdout.write("%3d%% done, current class: %s" % (100.0*i/82, cn))
+	sys.stdout.flush()
+	sys.stdout.write("\r%3d%% done, current class: %s" % (100.0*i/82, cn))
 	cl = forest(trainSingleClass(cn))
 	rez[cn] = [cl(i, Orange.classification.Classifier.GetProbabilities) for i in testData]
 
