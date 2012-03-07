@@ -9,13 +9,28 @@ trainClasses = {v.name:v for v in trainData.domain.class_vars}
 trainSingleClass = lambda x: Orange.data.Table(Orange.data.Domain(trainData.domain.features + [trainClasses[x]]), trainData)
 testData = Orange.data.Table(Orange.data.Domain(trainData.domain.features + [Orange.feature.Discrete("class", values=["F","T"])]), testData)
 
-forest = Orange.ensemble.forest.RandomForestLearner(trees=200, name="forest")
-rez = {}
-for i, cn in enumerate(trainClasses):
-#cn = "c40"
-	sys.stdout.flush()
-	sys.stdout.write("\r%3d%% done, current class: %s" % (100.0*i/82, cn))
-	cl = forest(trainSingleClass(cn))
-	rez[cn] = [cl(i, Orange.classification.Classifier.GetProbabilities) for i in testData]
+def buildRandomForest():
+	forest = Orange.ensemble.forest.RandomForestLearner(trees=200, name="forest")
+	rez = {}
+	for i, cn in enumerate(trainClasses):
+	#cn = "c40"
+		sys.stdout.flush()
+		sys.stdout.write("\r%3d%% done, current class: %s" % (100.0*i/82, cn))
+		cl = forest(trainSingleClass(cn))
+		rez[cn] = [cl(i, Orange.classification.Classifier.GetProbabilities) for i in testData]
 
-cPickle.dump(rez, file("RF200.pickled", "w"), -1)
+	cPickle.dump(rez, file("rezPickled/RF200.pickled", "w"), -1)
+
+def convertToCsv1():
+	rez = cPickle.load(file("rezPickled/RF200.pickled"))
+	t = [[ii for ii,dd in rez.items() if dd[i]['T'] > .3] for i in range(2000)]
+	for i in t:
+		print i
+
+def convertToCsv2():
+	rez = cPickle.load(file("rezPickled/RF200.pickled"))
+	for i in xrange(len(testData)):
+		t = sorted([(dd[i]['T'], ii) for ii, dd in rez.items()], reverse=True)[:6]
+		print sorted([int(t[ii][1][1:]) for ii in range(len(t))])
+
+convertToCsv2()
