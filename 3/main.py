@@ -178,3 +178,9 @@ def finalConvert():
 
 	rezS = [sorted(i.iteritems(), key=lambda x: x[1], reverse=True) for i in rezS]
 	rr = [[x[0][1:] for i,x in enumerate(r) if x[1] > r[0][1]*(0.3+(i/50.0))] for r in rezS]
+
+	f = file("final.csv","w")
+	f.write("\n".join([" ".join([x for x in i]) for i in rr ]))
+	f.close()
+
+finalConvert()
