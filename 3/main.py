@@ -167,3 +167,14 @@ def ctc():
 
 	for i in csv:
 		print i
+
+def finalConvert():
+	rez = cPickle.load(file("rezPickled/RF200.pickled"))
+	
+	rezS = [{} for i in range(len(testData))]
+	for cn in trainClasses:
+		for i,d in enumerate(testData):
+			rezS[i][cn] = rez[cn][i]['T']
+
+	rezS = [sorted(i.iteritems(), key=lambda x: x[1], reverse=True) for i in rezS]
+	rr = [[x[0][1:] for i,x in enumerate(r) if x[1] > r[0][1]*(0.3+(i/50.0))] for r in rezS]
