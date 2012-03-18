@@ -1,0 +1,86 @@
+% To je predloga za poročila o domačih nalogah pri predmetih, katerih
+% nosilec je Blaž Zupan. Seveda lahko tudi dodaš kakšen nov, zanimiv
+% in uporaben element, ki ga v tej predlogi (še) ni. Več o LaTeX-u izveš na
+% spletu, na primer na http://tobi.oetiker.ch/lshort/lshort.pdf.
+%
+% To predlogo lahko spremeniš v PDF dokument s pomočjo programa
+% pdflatex, ki je del standardne instalacije LaTeX programov.
+
+\documentclass[a4paper,11pt]{article}
+\usepackage{a4wide}
+\usepackage{fullpage}
+\usepackage[utf8x]{inputenc}
+\usepackage[slovene]{babel}
+\selectlanguage{slovene}
+\usepackage[toc,page]{appendix}
+\usepackage[pdftex]{graphicx} % za slike
+\usepackage{setspace}
+\usepackage{color}
+\definecolor{light-gray}{gray}{0.95}
+\usepackage{listings} % za vključevanje kode
+\usepackage{hyperref}
+\renewcommand{\baselinestretch}{1.2} % za boljšo berljivost večji razmak
+\renewcommand{\appendixpagename}{Priloge}
+
+\lstset{ % nastavitve za izpis kode, sem lahko tudi kaj dodaš/spremeniš
+language=Python,
+basicstyle=\footnotesize,
+basicstyle=\ttfamily\footnotesize\setstretch{1},
+backgroundcolor=\color{light-gray},
+}
+
+\title{Razvrščanje člankov v tematske skupine}
+\author{Gregor Majcen (63070199)}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Izjava o izdelavi domače naloge}
+Domačo nalogo in pripadajoče programe sem izdelal sam.
+
+\section{Uvod}
+Tretja domača naloga je namenjena izdelavi sistema za napoved oznak dokumentov tekmovanja RS12Contest. Za lažji začetek je naloga zastavljena na podmnožici vseh podatkov (2000 primerov in 10000 atributov). Narejeno je tudi interno tekmovanje, kjer tekmujemo s sošolci. Vse skupaj je kot predpriprava na resno tekmovanje.
+
+\section{Metode}
+\subsection{Ocenjevanje točnosti}
+\subsubsection{Prečno preverjanje}
+Prečno preverjanje je preverjanje s pomočjo razdelitve učne množice na različne dele. Sam sem implementiral k-fold, kar pomeni, da (kadar je k=10) učno množico razdelimo na 10 približno enakih delov. Ena desetina je namenjena t.i. testnim podatkom, ostalo pa množici, na kateri zgradimo model in ta model testiramo na prejšnji desetini. Ta postopek naredimo 10-krat, tako da je vsak primer natanko enkrat uporabljen za testiranje.
+\subsubsection{F ocena}
+Ker nam rezultati prečnega preverjanja ne povedo veliko, jih je pametno oceniti. Ena izmed ocen preverjanja točnosti klasifikatorja je F ocena, katero sem tudi implementiral. Odvisna je od množice T in P. T je množica vseh pravilnih napovedi oznak, P pa množica vseh napovedanih napovedi oznak. Oceno se da zelo enostavno izračunati po spodnji enačbi, kot končna ocena pa je povrečje vseh teh.
+
+$F = 2*{tocnost*priklic\over tocnost+priklic}$
+
+$tocnost = {T \cap P \over P}$
+
+$priklic = {T \cap P \over T}$
+\subsection{Napovedni modeli}
+Za učno množico sem iz prvotnih podatkov odstranil vse atribute, ki imajo manj kot 10 neničelnih vrednosti. S tem sem se znebil približno 80\% domnevno neuporabnih atributov. Po zgrajenih modelih je bil največji problem izbrati primerno število razredov in postaviti mejo. Ta problem sem poimenoval CC.
+\begin{description}
+\item[Naivni bayes] Naivni bayes je prva metoda, ki sem jo implementiral. S pomočjo prečnega preverjanja sem ugotovil, da so rezultati boljši od večinskega razreda, vendar ga zaradi zelo nenatančnih verjetnosti (zelo blizu 1 ali 0) vseeno nisem uporabil, saj nisem vedel kako naj rešim CC.
+\item[Orange multilabel klasifikator] CC problem sem prepustil klasifikatorju. Izmed vseh možnih modelov sem izbral tistega, ki se je najbolje obnesel pri 10-kratnem prečnem preverjanju. Rezultati niso bili najboljši, vendar vseeno dovolj dobri, da sem presegel prvi prag.
+\item[Random Forest] Uporabil sem algoritem, ki je napisan v knjižnjici Orange. Generiral sem 200 dreves, nato sem si pa rezultate zaradi dolgotrajnega izvajanja (približno minuto na drevo) shranil za nadaljno obdelavo. To je tudi razlog zakaj od tu naprej nisem več preverjal rezultatov s prečnim preverjanjem. Reševanje CC problema je na veliko načinov opisan v datoteki main.py (funkcije convert...)
+\item[Ostalo] Vsi ostali algoritmi (lastna različica KNN, Orange KNN, bayes na različne načine) so implementirani v datoteki main.py, vendar niso prinesli želenih rezulatov.
+\end{description}
+
+\section{Rezultati}
+Vsi moji rezultati so na strežniku kaggle pod imenom Gregor Majcen. Najboljši rezultati so iz random forest modela. Kot je že napisano f-ocene tu nisem več računal zaradi predolgotrajnega dela. Številke označene z * so bile oddane pred 12.3.
+\begin{table}[htbp]
+\caption{Rezultati RandomForest (200 dreves)}
+\label{tab1}
+\begin{center}
+\begin{tabular}{llllp{10cm}}
+\v{s}t. & {ocena} & komentar \\
+\hline
+1* & 0.40815 & Izbrani so najboljši štirje razredi za vsak primer.\\
+2* & 0.40453 & Izbranih je najboljših šest razredov za vsak primer.\\&& Vsak razred je moral imeti verjetnost večjo od praga 0.2\\
+3* & 0.41016 & Izbrani so najboljši štirje razredi za vsak primer. \\&& Vsak razred je moral imeti verjetnost večjo od praga mediane vseh četrtih razredov, \\&& če to ni bilo izpolnjeno vzami najboljše tri\\ 
+4* & 0.43446 & Izbrani so vsi razredi, ki so bili za 30\% slabši od najboljšega.\\&& Preveliko število napovedi sem rešil s kaznovanjem vsakega naslednika.\\&& Funkcija je napisana main.py: finalConvert()\\
+5 & 0.41379 & Lasten stacking vseh prej opisanih modelov\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\end{document}
