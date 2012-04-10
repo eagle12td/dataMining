@@ -1,17 +1,10 @@
 import numpy as np
 import pylab as pl
 import copy
-import Orange
 
 plotsize = 20
 zt = -20.
-
-data = Orange.data.Table("housing")
-X, Y, _ = data.to_numpy()
-
-m = 3
-X /= m
-Y /= m
+crange = np.exp(np.hstack([np.linspace(7.71, 9, 5),np.linspace(9, 13, 5)]))
 
 def iterLoop(end=-1):
 	i = 0
@@ -19,72 +12,62 @@ def iterLoop(end=-1):
 		i+=1
 		yield i
 
-def analiticna(X,Y):
-	return np.linalg.inv(X.T.dot(X)).dot(X.T).dot(Y)
-
-def normalPlot(X, Y, index=0, alfa=0.001, eps=1e-5, maxIt=-1):
+def plot(X, Y, theta, at, th):
 	pl.close()
-	X = np.column_stack([np.ones(X.shape[0]), X[:,index]])
-	xlist = np.linspace(-plotsize, plotsize, 100)
-	ylist = np.linspace(-plotsize, plotsize, 100)
-	XX, YY = np.meshgrid(xlist, ylist)
-	ZZ = np.zeros(XX.shape)
-	for i in range(X.shape[0]):
-		ZZ += (XX + YY*X[i,1] - Y[i])**2
-	ZZ /= 2
-	pl.contour(XX, YY, ZZ, np.linspace(ZZ.min(), ZZ.min()*1000, 100))
-
-	m, n = X.shape
-	theta = np.array([zt for i in range(n)])
-	otheta = copy.deepcopy(theta)
-	for itc in iterLoop(maxIt):
-		for i in range(m):
-			for j in range(n):
-				theta[j] = theta[j] + alfa * (Y[i] - theta.dot(X[i,:]))*X[i,j]
-		if(abs(sum(theta-otheta)) < eps):
-			break
-		pl.plot([otheta[0],theta[0]] ,[otheta[1], theta[1]], 'kx-')
-		otheta = copy.deepcopy(theta)
-	r = analiticna(X,Y)
-	pl.plot(theta[0], theta[1], 'ro')
-	pl.plot([-plotsize,plotsize],[r[1]]*2,'k-')
-	pl.plot([r[0]]*2,[-plotsize,plotsize],'k-')
-	pl.show()
-	pl.close()
-	pl.plot(X[:,1], Y, '*')
-	pl.plot(X[:,1], X.dot(theta))
-	pl.plot(X[:,1], X.dot(r))
-	pl.show()
+	[pl.plot(i[0], i[1], 'kx-') for i in th]
 	
-def batchPlot(X, Y, index=0, alfa=0.001, eps=1e-5, maxIt=-1):
-	pl.close()
-	X = np.column_stack([np.ones(X.shape[0]), X[:,index]])
-	xlist = np.linspace(-plotsize, plotsize, 100)
-	ylist = np.linspace(-plotsize, plotsize, 100)
-	XX, YY = np.meshgrid(xlist, ylist)
+	pl.plot(theta[0], theta[1], 'ro')
+	pl.plot([-plotsize,plotsize],[at[1]]*2,'k-')
+	pl.plot([at[0]]*2,[-plotsize,plotsize],'k-')
+	
+	XX, YY = np.meshgrid(np.linspace(-plotsize, plotsize, 100), np.linspace(-plotsize, plotsize, 100))
 	ZZ = np.zeros(XX.shape)
 	for i in range(X.shape[0]):
 		ZZ += (XX + YY*X[i,1] - Y[i])**2
 	ZZ /= 2
-	pl.contour(XX, YY, ZZ, np.linspace(ZZ.min(), ZZ.min()*1000, 100))
 
-	m, n = X.shape
-	theta = np.array([zt for i in range(n)])
-	otheta = copy.deepcopy(theta)
-	for itc in iterLoop(maxIt):
-		for j in range(n):
-			theta[j] = theta[j] + alfa * sum([(Y[i] - theta.dot(X[i,:]))*X[i,j] for i in range(m)])
-		if(abs(sum(theta-otheta)) < eps):
-			break
-		pl.plot([otheta[0],theta[0]] ,[otheta[1], theta[1]], 'kx-')
-		otheta = copy.deepcopy(theta)
-	r = analiticna(X,Y)
-	pl.plot(theta[0], theta[1], 'ro')
-	pl.plot([-plotsize,plotsize],[r[1]]*2,'k-')
-	pl.plot([r[0]]*2,[-plotsize,plotsize],'k-')
+	pl.clabel(pl.contour(XX, YY, ZZ, crange), inline=1, fontsize=8)
 	pl.show()
 	pl.close()
 	pl.plot(X[:,1], Y, '*')
 	pl.plot(X[:,1], X.dot(theta))
-	pl.plot(X[:,1], X.dot(r))
+	pl.plot(X[:,1], X.dot(at))
 	pl.show()
+
+def normal(theta, alfa, X, Y):
+	for i in range(X.shape[0]):
+		theta = theta + alfa * (Y[i] - theta.dot(X[i]))*X[i]
+	return theta
+
+def batch(theta, alfa, X, Y):
+	return theta + alfa * sum([(Y[i] - theta.dot(X[i]))*X[i] for i in range(X.shape[0])])
+
+def getTheta(X, Y, index=-1, alfa=0.001, eps=1e-5, maxIt=-1, showplot=False, batchAlg=False):
+	th = []
+	if index == -1:
+		if showplot:
+			raise Exception("Plot is aviable only for one attribute")
+		X = np.column_stack([np.ones(X.shape[0]), X])
+	else:
+		X = np.column_stack([np.ones(X.shape[0]), X[:,index]])
+
+	theta = np.array([zt for i in range(X.shape[1])])
+	otheta = copy.deepcopy(theta)
+	for itc in iterLoop(maxIt):
+		if batchAlg:
+			theta = batch(theta, alfa, X, Y)
+		else:
+			theta = normal(theta, alfa, X, Y)
+		if showplot:
+			th.append(([otheta[0],theta[0]], [otheta[1], theta[1]]))
+		if(abs(sum(theta-otheta)) < eps):
+			break
+		otheta = copy.deepcopy(theta)
+	if showplot:
+		plot(X, Y, theta, analiticna(X,Y), th)
+	return theta
+
+def analiticna(X,Y):
+	if X.shape[0] != Y.shape[0]:
+		X = np.column_stack([np.ones(X.shape[0]), X])
+	return np.linalg.inv(X.T.dot(X)).dot(X.T).dot(Y)
