@@ -42,7 +42,7 @@ def normal(theta, alfa, X, Y):
 def batch(theta, alfa, X, Y):
 	return theta + alfa * sum([(Y[i] - theta.dot(X[i]))*X[i] for i in range(X.shape[0])])
 
-def getTheta(X, Y, index=-1, alfa=0.001, eps=1e-5, maxIt=-1, showplot=False, batchAlg=False):
+def getTheta(X, Y, alfa=0.001, eps=1e-5, index=-1, maxIt=-1, showplot=False, batchAlg=False):
 	th = []
 	if index == -1:
 		if showplot:
@@ -60,14 +60,18 @@ def getTheta(X, Y, index=-1, alfa=0.001, eps=1e-5, maxIt=-1, showplot=False, bat
 			theta = normal(theta, alfa, X, Y)
 		if showplot:
 			th.append(([otheta[0],theta[0]], [otheta[1], theta[1]]))
+		print abs(sum(theta-otheta))
 		if(abs(sum(theta-otheta)) < eps):
 			break
 		otheta = copy.deepcopy(theta)
 	if showplot:
 		plot(X, Y, theta, analiticna(X,Y), th)
-	return theta
+	return theta, itc
 
 def analiticna(X,Y):
-	if X.shape[0] != Y.shape[0]:
-		X = np.column_stack([np.ones(X.shape[0]), X])
 	return np.linalg.inv(X.T.dot(X)).dot(X.T).dot(Y)
+	
+def j(theta, X, Y):
+	if X.shape[0] != theta.shape[0]:
+		X = np.column_stack([np.ones(X.shape[0]), X])
+	return sum([(theta.dot(X[i]) - Y[i])**2 for i in range(X.shape[0])])/2.
