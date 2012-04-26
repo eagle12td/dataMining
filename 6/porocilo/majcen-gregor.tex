@@ -1,0 +1,86 @@
+% To je predloga za poročila o domačih nalogah pri predmetih, katerih
+% nosilec je Blaž Zupan. Seveda lahko tudi dodaš kakšen nov, zanimiv
+% in uporaben element, ki ga v tej predlogi (še) ni. Več o LaTeX-u izveš na
+% spletu, na primer na http://tobi.oetiker.ch/lshort/lshort.pdf.
+%
+% To predlogo lahko spremeniš v PDF dokument s pomočjo programa
+% pdflatex, ki je del standardne instalacije LaTeX programov.
+
+\documentclass[a4paper,11pt]{article}
+\usepackage{a4wide}
+\usepackage{fullpage}
+\usepackage[utf8x]{inputenc}
+\usepackage[slovene]{babel}
+\selectlanguage{slovene}
+\usepackage[toc,page]{appendix}
+\usepackage[pdftex]{graphicx} % za slike
+\usepackage{setspace}
+\usepackage{color}
+\definecolor{light-gray}{gray}{0.95}
+\usepackage{listings} % za vključevanje kode
+\usepackage{hyperref}
+\renewcommand{\baselinestretch}{1.2} % za boljšo berljivost večji razmak
+\renewcommand{\appendixpagename}{Priloge}
+
+\lstset{ % nastavitve za izpis kode, sem lahko tudi kaj dodaš/spremeniš
+language=Python,
+basicstyle=\footnotesize,
+basicstyle=\ttfamily\footnotesize\setstretch{1},
+backgroundcolor=\color{light-gray},
+}
+
+\title{Spoznavanje s podatki o biološkem odgovoru na učinkovine}
+\author{Gregor Majcen (63070199)}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Uvod}
+Šesta domača naloga je namenjena preučevanju podatkov, ki so s področja kemoinformatike in jih bomo potrebovali za naslednje tekmovanje. Cilj je napoved biološkega odgovora na učinkovino. Tokrat imamo binarni razred, napovedati pa moramo s kolikšno verjetnostjo trdimo pozitivno napoved.
+
+\section{Podatki in opis problemske domene}
+Učna množica (podatki) vsebuje \textbf{1776 atributov}, \textbf{3751 primerov} in \textbf{1 razred}. Kot je že napisano v uvodu je \textbf{razred binaren}, \textbf{atributi} so pa \textbf{mešani} in \textbf{normalizirani} (od vključno 0 do vključno 1). Če pogledamo vsak atribut posebej in preštejemo različne vrednosti atributa, lahko s pomočjo tega na grobo postavimo mejo med diskretnim in zveznim atributom. Izbrana \textbf{meja, ki loči tip je 10} in rezultat tega je \textbf{1357 diskretnih atributov} ter \textbf{419 zveznih}. 
+
+Učno množico imamo sedaj tipizirano, sedaj pa poglejmo še splošne opazke. Opazil sem, da je matrika zopet kar \textbf{redka} in sicer je le \textbf{16\% neničelnih elementov}. Kljub temu je \textbf{28 atributov brez ničelnih elementov}. Ti popolnoma polni atributi so vsi zvezni. Seveda pa obstajajo tudi skoraj prazni atributi in če zopet postavimo mejo 10, imamo \textbf{46 atributov, ki imajo 10 ali manj neničelnih vrednosti}. Najbolj prazni so trije atributi, ki vsebujejo \textbf{le eno neničelno vrednost} in sicer atribut številka \textbf{71}, \textbf{882} in \textbf{857}. 
+
+Vsi ti podatki so implementirani v datoteki \textit{main.py}.
+
+\section{Informativnost atributov}
+Informativnost atributov sem preveril z dvema testoma, to sta \textbf{ReliefF} in \textbf{InformationGain}. 
+
+ReliefF je eden izmed ocenjevalcev atributov, ki zna delati z zveznimi atributi in tudi zna najti odvisnost med atributi. Ta zadnja lastnost velja večinoma za malo število atributov, pri veliki količini pa to lastnost deloma izgubi, saj je preveč možnih kombinacij (gleda le nekaj sosednjih). Uporabil sem implementacijo, ki je napisana v Orange.
+
+InformationGain, ki sem ga implementiral ze v drugi domači nalogi, je prepisan s pomočjo numpy, ki je zelo hiter pri računaju z vektorji.
+
+Da sem določil, ali je ocena dobra ali ne, sem uporabil \textbf{permutacijski test} in sicer s \textbf{stotimi permutacijami} in \textbf{$\alpha$ = 0.05}. S temi mejami sem dobil, da je \textbf{1072 atributov primernih}.
+
+Algoritma sta na voljo v \textit{ig.py} in \textit{relieff.py}. 
+
+\section{Ocenjevanje kakovosti napovednih modelov}
+Modele ocenjujemo z funkcijo logLoss:
+$$log loss=-\frac{1}{N}\sum_{i=1}^Ny_i\ln\left(\hat{y_i}\right)+\left(1-y_i\right)\ln\left(1-\hat{y_i}\right),$$ kjer je \textit{N} število primerov, \textit{ln} naravni logaritem, $\hat{y_i}$ naša verjetnost za i-ti primer in $y_i$ rezultat razreda za i-ti primer (ki je 0 ali 1).
+$$$$
+Naš cilj je minimizirati oceno logLoss.
+
+Da sem ugotovil, kateri že znani algoritmi za klasifikacijo ugajajo našim podatkom sem si izbral pet različnih klasifikatorjev, kateri so že implementirani v Orange:
+\begin{itemize}
+\item Logistic regression
+\item Random Forest (50 dreves)
+\item Naivni bayes
+\item K-Nearest Neighbors
+\item Linear Support Vector Machine
+\end{itemize}
+
+Implementiral sem 10-kratno prečno preverjanje in testiral zgornje klasifikatorje. Kot mejo sem si izbral najboljšo konstantno verjetnost, to je $0.542400$, kjer sem dobil logLoss enak $0.690$. To mejo sta prekoračila le Random Forest (z $logLoss = 0.467$) in K-Nearest Neighbors (z $logLoss = 0.540$).
+
+Prečno preverjanje in logLoss algoritem je na voljo v \textit{ocene.py}.
+
+\section{Zaključek}
+Najboljši rezultat prečnega preverjanja je bil RandomForest s 50 drevesi. S tem modelom bi na realnem tekmovanju prišel na približno 160-to mesto. Ta rezultat je pod benchmarkom RandomForesta. Temu bi se lahko približal z večjim številom dreves, celo višje pa bi mogoče lahko prišel z selekcijo in dodajanjem atributov in z uporabo metode stacking.
+
+\section{Izjava o izdelavi domače naloge}
+Domačo nalogo in pripadajoče programe sem izdelal sam.
+
+\end{document}
